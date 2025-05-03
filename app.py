@@ -5,6 +5,7 @@ import pandas as pd
 import random
 import time
 import datetime
+import requests
 
 # Lokasi file log dan folder foto
 LOG_FILE = "absensi_log.txt"
@@ -35,13 +36,19 @@ def load_absensi_data():
                         continue  # Lewati baris error
     return data
 
-# Simulasi data sensor (bisa diganti dengan data asli dari MQTT, API, dsb)
+# Ambil data sensor dari Flask API
 def get_sensor_data():
-    return {
-        "temperature": round(random.uniform(20, 35), 1),
-        "humidity": round(random.uniform(30, 70), 1),
-        "noise_level": round(random.uniform(30, 70), 1)
-    }
+    try:
+        response = requests.get("http://192.168.0.103:5000/data")  # ganti sesuai URL Flask kamu
+        if response.status_code == 200:
+            return response.json()  # pastikan API Flask mengembalikan JSON {'temperature':..., 'humidity':..., 'noise_level':...}
+        else:
+            st.error("Gagal mengambil data sensor dari server.")
+            return None
+    except Exception as e:
+        st.error(f"Terjadi kesalahan koneksi ke server Flask: {e}")
+        return None
+
 
 def get_classroom_condition(temperature, humidity, noise):
     if temperature < 20:
