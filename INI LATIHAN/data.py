@@ -22,11 +22,10 @@ def send_data(temp, humidity, sound):
     response = requests.post(url, json=payload, headers=headers)
     print(f"Sent: {payload} | Status: {response.status_code}")
 
-# Kirim data setiap 1 detik selama 3 detik
-start_time = time.time()
-while time.time() - start_time < 3:
-    temp = round(random.uniform(20.0, 35.0), 2)       # Temperatur dalam °C
-    humidity = round(random.uniform(30.0, 80.0), 2)   # Humidity dalam %
-    sound = round(random.uniform(40.0, 90.0), 2)      # Sound dalam dB
+# Kirim data setiap 1 detik selama 2 detik
+while True:
+    temp = round(random.uniform(20.0, 35.0), 2)
+    humidity = round(random.uniform(30.0, 80.0), 2)
+    sound = round(random.uniform(40.0, 90.0), 2)
     send_data(temp, humidity, sound)
-    time.sleep(1)
+    time.sleep(1)  # Kirim setiap 1 detik
