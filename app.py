@@ -183,6 +183,9 @@ if page == "Data Absensi":
         time.sleep(3)
         st.rerun()
 
+    if st.button("🔄 Refresh Data Absensi"):
+        st.rerun()
+
     st.markdown("DATA ABSENSI")
     absensi_data = load_absensi_data()
 
