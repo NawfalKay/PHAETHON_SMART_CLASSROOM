@@ -36,17 +36,29 @@ def load_absensi_data():
                         continue
     return data
 
-# Ambil data sensor dari Flask API
-def get_sensor_data():
+# Ambil data sensor dari Ubidots
+def get_sensor_data_from_ubidots():
+    API_KEY = 'BBUS-e5b989efecad340dceef0c67ab5ecc52d04'  # Ganti dengan API Key Ubidots kamu
+    DEVICE_ID = 'phaethon'  # Ganti dengan Device ID Ubidots kamu
+
+    # Endpoint untuk mengambil data dari Ubidots
+    UBIDOTS_URL = f'https://industrial.api.ubidots.com/api/v1.6/devices/{DEVICE_ID}/data/'
+
+    headers = {
+        'X-Auth-Token': API_KEY
+    }
+
     try:
-        response = requests.get("http://192.168.0.103:8080/data")
+        response = requests.get(UBIDOTS_URL, headers=headers)
         if response.status_code == 200:
-            return response.json()
+            data = response.json()
+            # Ambil data sensor dari hasil response
+            return data['results']
         else:
-            st.error("Gagal mengambil data kemungkinan sensor mati.")
+            st.error("Gagal mengambil data dari Ubidots.")
             return None
     except Exception as e:
-        st.error(f"Terjadi kesalahan koneksi ke server Flask: {e}")
+        st.error(f"Terjadi kesalahan koneksi ke Ubidots: {e}")
         return None
 
 def get_classroom_condition(temperature, humidity, noise):
@@ -87,10 +99,15 @@ page = st.sidebar.selectbox("Pilih Halaman", ["Dashboard Sensor", "Data Absensi"
 
 # Halaman Sensor
 if page == "Dashboard Sensor":
-    sensor_data = get_sensor_data()
+    sensor_data = get_sensor_data_from_ubidots()
 
     if sensor_data:
         st.markdown("### Monitoring Sensor")
+
+        # Ambil data suhu, kelembapan, dan kebisingan dari Ubidots
+        humidity = sensor_data[0].get('value', 0)  # Anggap data kelembapan ada di index 0
+        temperature = sensor_data[1].get('value', 0)  # Anggap data suhu ada di index 1
+        noise_level = sensor_data[2].get('value', 0)  # Anggap data kebisingan ada di index 2
 
         col1, col2, col3 = st.columns([1, 1, 1])
         with col1:
@@ -102,13 +119,13 @@ if page == "Dashboard Sensor":
 
         col1, col2, col3 = st.columns([1, 1, 1])
         with col1:
-            st.markdown(f'<h2 style="text-align: center; color: #1E90FF;">{sensor_data["humidity"]}%</h2>', unsafe_allow_html=True)
+            st.markdown(f'<h2 style="text-align: center; color: #1E90FF;">{humidity}%</h2>', unsafe_allow_html=True)
         with col2:
-            st.markdown(f'<h2 style="text-align: center; color: #FF6347;">{sensor_data["temperature"]}°C</h2>', unsafe_allow_html=True)
+            st.markdown(f'<h2 style="text-align: center; color: #FF6347;">{temperature}°C</h2>', unsafe_allow_html=True)
         with col3:
-            st.markdown(f'<h2 style="text-align: center; color: #32CD32;">{sensor_data["noise_level"]} dB</h2>', unsafe_allow_html=True)
+            st.markdown(f'<h2 style="text-align: center; color: #32CD32;">{noise_level} dB</h2>', unsafe_allow_html=True)
 
-        classroom_condition = get_classroom_condition(sensor_data['temperature'], sensor_data['humidity'], sensor_data['noise_level'])
+        classroom_condition = get_classroom_condition(temperature, humidity, noise_level)
         st.markdown(f'<h5 style="text-align: center; color: #444;">{classroom_condition}</h5>', unsafe_allow_html=True)
 
         st.markdown("---")
@@ -122,9 +139,9 @@ if page == "Dashboard Sensor":
             st.session_state.noise_data = []
 
         # Tambahkan data terbaru
-        st.session_state.temperature_data.append(sensor_data['temperature'])
-        st.session_state.humidity_data.append(sensor_data['humidity'])
-        st.session_state.noise_data.append(sensor_data['noise_level'])
+        st.session_state.temperature_data.append(temperature)
+        st.session_state.humidity_data.append(humidity)
+        st.session_state.noise_data.append(noise_level)
 
         # Hanya simpan 10 data terakhir
         max_data = 10
