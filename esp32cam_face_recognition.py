@@ -88,12 +88,12 @@ while running:
     face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
 
     for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
-        matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
+        face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
+        best_match_index = np.argmin(face_distances)
         name = "Unknown"
 
-        if True in matches:
-            index = matches.index(True)
-            name = known_face_names[index]
+        if face_distances[best_match_index] < 0.4:  # Toleransi lebih ketat
+            name = known_face_names[best_match_index]
 
             # Jika belum diabsen, tambahkan ke log dan simpan foto
             if name not in attendance_log:
@@ -101,7 +101,7 @@ while running:
                 timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
                 photo_filename = f"{ATTENDANCE_DIR}/{name}_{timestamp}.jpg"
                 cv2.imwrite(photo_filename, frame)
-                log_attendance(name)  # Catat ke file log
+                log_attendance(name)
 
         # Skala balik koordinat (karena frame dikecilkan)
         top *= 2
@@ -111,18 +111,13 @@ while running:
 
         # Gambar persegi panjang di sekitar wajah
         cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
-        cv2.putText(frame, name, (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+        cv2.putText(frame, f"{name} ({face_distances[best_match_index]:.2f})", (left, top - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
 
     # Convert frame ke format pygame (RGB → Surface)
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-    # Mirror frame secara horizontal
-    frame_rgb = np.fliplr(frame_rgb)
-
-    # Rotate untuk orientasi yang benar
-    frame_rgb = np.rot90(frame_rgb)
-
-    # Membuat surface Pygame dari frame yang sudah diproses
+    frame_rgb = np.fliplr(frame_rgb)  # Mirror frame
+    frame_rgb = np.rot90(frame_rgb)   # Rotate 90 derajat
     frame_surface = pygame.surfarray.make_surface(frame_rgb)
     screen.blit(frame_surface, (0, 0))
     pygame.display.update()

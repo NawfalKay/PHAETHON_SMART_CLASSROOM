@@ -33,22 +33,21 @@ def load_absensi_data():
                             "photo_path": photo_path if os.path.exists(photo_path) else None
                         })
                     except ValueError:
-                        continue  # Lewati baris error
+                        continue
     return data
 
 # Ambil data sensor dari Flask API
 def get_sensor_data():
     try:
-        response = requests.get("http://192.168.0.103:5000/data")  # ganti sesuai URL Flask kamu
+        response = requests.get("http://192.168.0.103:8080/data")
         if response.status_code == 200:
-            return response.json()  # pastikan API Flask mengembalikan JSON {'temperature':..., 'humidity':..., 'noise_level':...}
+            return response.json()
         else:
-            st.error("Gagal mengambil data sensor dari server.")
+            st.error("Gagal mengambil data kemungkinan sensor mati.")
             return None
     except Exception as e:
         st.error(f"Terjadi kesalahan koneksi ke server Flask: {e}")
         return None
-
 
 def get_classroom_condition(temperature, humidity, noise):
     if temperature < 20:
@@ -88,13 +87,11 @@ page = st.sidebar.selectbox("Pilih Halaman", ["Dashboard Sensor", "Data Absensi"
 
 # Halaman Sensor
 if page == "Dashboard Sensor":
-    # Menampilkan data sensor yang baru di-refresh
-    sensor_data = get_sensor_data()  # Ini memastikan data sensor baru diperoleh setiap kali
+    sensor_data = get_sensor_data()
 
     if sensor_data:
         st.markdown("### Monitoring Sensor")
 
-        # Baris judul
         col1, col2, col3 = st.columns([1, 1, 1])
         with col1:
             st.markdown('<h4 style="text-align: center; color: #1E90FF;">KELEMBAPAN</h4>', unsafe_allow_html=True)
@@ -103,7 +100,6 @@ if page == "Dashboard Sensor":
         with col3:
             st.markdown('<h4 style="text-align: center; color: #32CD32;">KEBISINGAN</h4>', unsafe_allow_html=True)
 
-        # Baris nilai
         col1, col2, col3 = st.columns([1, 1, 1])
         with col1:
             st.markdown(f'<h2 style="text-align: center; color: #1E90FF;">{sensor_data["humidity"]}%</h2>', unsafe_allow_html=True)
@@ -112,61 +108,70 @@ if page == "Dashboard Sensor":
         with col3:
             st.markdown(f'<h2 style="text-align: center; color: #32CD32;">{sensor_data["noise_level"]} dB</h2>', unsafe_allow_html=True)
 
-        # Kesimpulan kondisi kelas
         classroom_condition = get_classroom_condition(sensor_data['temperature'], sensor_data['humidity'], sensor_data['noise_level'])
         st.markdown(f'<h5 style="text-align: center; color: #444;">{classroom_condition}</h5>', unsafe_allow_html=True)
 
-        # Garis pembatas & grafik
         st.markdown("---")
-        st.subheader("Grafik Suhu dan Kelembapan")
+        st.subheader("Grafik Suhu, Kelembapan, dan Kebisingan")
 
         if "temperature_data" not in st.session_state:
             st.session_state.temperature_data = []
         if "humidity_data" not in st.session_state:
             st.session_state.humidity_data = []
+        if "noise_data" not in st.session_state:
+            st.session_state.noise_data = []
 
+        # Tambahkan data terbaru
         st.session_state.temperature_data.append(sensor_data['temperature'])
         st.session_state.humidity_data.append(sensor_data['humidity'])
-        st.session_state.temperature_data = st.session_state.temperature_data[-100:]
-        st.session_state.humidity_data = st.session_state.humidity_data[-100:]
+        st.session_state.noise_data.append(sensor_data['noise_level'])
+
+        # Hanya simpan 10 data terakhir
+        max_data = 10
+        st.session_state.temperature_data = st.session_state.temperature_data[-max_data:]
+        st.session_state.humidity_data = st.session_state.humidity_data[-max_data:]
+        st.session_state.noise_data = st.session_state.noise_data[-max_data:]
 
         df = pd.DataFrame({
             "Suhu (°C)": st.session_state.temperature_data,
-            "Kelembapan (%)": st.session_state.humidity_data
+            "Kelembapan (%)": st.session_state.humidity_data,
+            "Kebisingan (dB)": st.session_state.noise_data
         })
-        st.line_chart(df)
+
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col1:
+            st.subheader("Grafik Kelembapan")
+            st.line_chart(df["Kelembapan (%)"])
+        with col2:
+            st.subheader("Grafik Suhu")
+            st.line_chart(df["Suhu (°C)"])
+        with col3:
+            st.subheader("Grafik Kebisingan")
+            st.line_chart(df["Kebisingan (dB)"])
 
         st.markdown(""" 
         - **Suhu (°C)**: Mengukur suhu ruangan secara real-time.
         - **Kelembapan (%)**: Mengukur tingkat kelembapan udara di sekitar.
+        - **Kebisingan (dB)**: Mengukur tingkat kebisingan di dalam kelas.
         """)
 
-    # Melakukan rerun otomatis setiap 5 detik untuk memperbarui data sensor
     time.sleep(2)
-    st.rerun()  # Re-render tampilan halaman Dashboard Sensor
+    st.rerun()
 
 # Halaman Absensi
 if page == "Data Absensi":
-    # Tombol reset data
     if st.button("🔴 Reset Data Absensi"):
-        # Kosongkan file log
         if os.path.exists(LOG_FILE):
             open(LOG_FILE, "w").close()
-
-        # Hapus semua foto absensi
         if os.path.exists(PHOTO_DIR):
             for file in os.listdir(PHOTO_DIR):
                 file_path = os.path.join(PHOTO_DIR, file)
                 if os.path.isfile(file_path):
                     os.remove(file_path)
-
         st.success("✅ Semua data absensi telah dihapus.")
-        
-        # Menunggu 3 detik sebelum rerun otomatis
         time.sleep(3)
-        st.rerun()  # Re-render tampilan
+        st.rerun()
 
-    # Tampilkan daftar absensi dari file
     st.markdown("DATA ABSENSI")
     absensi_data = load_absensi_data()
 
