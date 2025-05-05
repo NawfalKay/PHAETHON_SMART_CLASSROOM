@@ -82,7 +82,8 @@ def load_absensi_data():
                 if line:
                     try:
                         timestamp, name = line.split(", ")
-                        photo_filename = f"{name}{timestamp.replace(':', '-').replace(' ', '')}.jpg"
+                        # Ubah format nama file sesuai dengan nama_tanggal_waktu
+                        photo_filename = f"{name.replace(' ', '')}{timestamp.replace(' ', '_').replace(':', '-')}.jpg"
                         photo_path = os.path.join(PHOTO_DIR, photo_filename)
                         data.append({
                             "name": name,
@@ -175,6 +176,10 @@ if page == "Dashboard Sensor":
 # === DATA ABSENSI ===
 if page == "Data Absensi":
     st.markdown("### Data Absensi")
+    
+    # Tambahkan tombol untuk memulai atau menghentikan auto-refresh
+    auto_refresh = st.checkbox("Aktifkan Auto-Refresh", value=True)
+
     absensi_data = load_absensi_data()
 
     col1, col2 = st.columns([4, 1])
@@ -190,17 +195,24 @@ if page == "Data Absensi":
             with st.container():
                 cols = st.columns([1, 2])
                 with cols[0]:
-                    if entry["photo_path"]:
+                    photo_path = entry["photo_path"]
+                    if entry["photo_path"] and os.path.exists(photo_path):
                         img = Image.open(entry["photo_path"])
                         st.image(img, width=200)
                     else:
-                        st.warning("📸 Foto tidak ditemukan.")
+                        st.warning(f"📸 Foto tidak ditemukan di path: {photo_path}")
                 with cols[1]:
                     st.markdown(f"### 👤 {entry['name']}")
                     st.markdown(f"🕒 {entry['timestamp']}")
                     st.markdown("---")
     else:
         st.info("Belum ada data absensi.")
+
+    # Tambahkan fitur auto-refresh
+    if auto_refresh:
+        time.sleep(2)
+        st.rerun()
+
 
 # === LOG ABSENSI ===
 if page == "Log Absensi":
