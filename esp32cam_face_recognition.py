@@ -7,7 +7,7 @@ import os
 from datetime import datetime
 
 # URL streaming ESP32-CAM
-ESP32_CAM_URL = "http://192.168.159.219:81/stream"  # Ganti dengan IP ESP32-CAM Anda
+ESP32_CAM_URL = 0  # Ganti dengan IP ESP32-CAM Anda
 
 # Inisialisasi pygame
 pygame.init()
