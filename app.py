@@ -35,7 +35,7 @@ st.markdown("---")
 def get_sensor_data():
     temperature = get_latest_value("temperature")
     humidity = get_latest_value("humidity")
-    noise = get_latest_value("sound")  # sesuaikan nama variabel di Ubidots Anda
+    noise = get_latest_value("sound")
     if None in [temperature, humidity, noise]:
         st.error("Gagal mengambil data dari Ubidots.")
         return None
@@ -92,6 +92,16 @@ def load_absensi_data():
                     except ValueError:
                         continue
     return data
+
+# === FUNGSI RESET DATA ABSENSI DAN LOG ===
+def reset_absensi():
+    if os.path.exists(LOG_FILE):
+        os.remove(LOG_FILE)
+
+    if os.path.exists(PHOTO_DIR):
+        for filename in os.listdir(PHOTO_DIR):
+            if filename.endswith(".jpg"):
+                os.remove(os.path.join(PHOTO_DIR, filename))
 
 # === HALAMAN NAVIGASI ===
 page = st.sidebar.selectbox("Pilih Halaman", ["Dashboard Sensor", "Data Absensi", "Log Absensi"])
@@ -164,8 +174,16 @@ if page == "Dashboard Sensor":
 
 # === DATA ABSENSI ===
 if page == "Data Absensi":
-    st.markdown("DATA ABSENSI")
+    st.markdown("### Data Absensi")
     absensi_data = load_absensi_data()
+
+    col1, col2 = st.columns([4, 1])
+    with col2:
+        if st.button("🔁 Reset Absensi"):
+            reset_absensi()
+            st.success("Data absensi dan foto berhasil direset.")
+            time.sleep(2)
+            st.rerun()
 
     if absensi_data:
         for entry in reversed(absensi_data):
@@ -184,17 +202,22 @@ if page == "Data Absensi":
     else:
         st.info("Belum ada data absensi.")
 
-    time.sleep(2)
-    st.rerun()
-
 # === LOG ABSENSI ===
 if page == "Log Absensi":
     st.markdown("### Log Absensi")
-    
+
+    col1, col2 = st.columns([4, 1])
+    with col2:
+        if st.button("🧹 Reset Log"):
+            reset_absensi()
+            st.success("Log absensi berhasil dihapus.")
+            time.sleep(2)
+            st.rerun()
+
     if os.path.exists(LOG_FILE):
         with open(LOG_FILE, "r") as f:
             logs = f.readlines()
-        
+
         if logs:
             st.table([{"Waktu": log.split(", ")[0], "Nama": log.split(", ")[1].strip()} for log in logs])
         else:
