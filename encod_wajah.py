@@ -72,8 +72,8 @@ def show_existing_faces():
 # Fungsi utama untuk menjalankan program
 def main():
     # Menambahkan wajah baru (bisa di-comment jika tidak menambah wajah baru)
-    image_path = ""  # Ganti dengan path gambar wajah
-    name = ""  # Ganti dengan nama yang sesuai
+    image_path = "fasya.jpg"  # Ganti dengan path gambar wajah
+    name = "Fasya"  # Ganti dengan nama yang sesuai
     add_new_face(image_path, name)
 
     # Menampilkan jumlah dan nama-nama wajah yang ada

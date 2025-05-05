@@ -2,7 +2,6 @@ import streamlit as st
 from PIL import Image
 import os
 import pandas as pd
-import random
 import time
 import datetime
 import requests
@@ -83,7 +82,7 @@ def load_absensi_data():
                 if line:
                     try:
                         timestamp, name = line.split(", ")
-                        photo_filename = f"{name}_{timestamp.replace(':', '-').replace(' ', '_')}.jpg"
+                        photo_filename = f"{name}{timestamp.replace(':', '-').replace(' ', '')}.jpg"
                         photo_path = os.path.join(PHOTO_DIR, photo_filename)
                         data.append({
                             "name": name,
@@ -95,7 +94,7 @@ def load_absensi_data():
     return data
 
 # === HALAMAN NAVIGASI ===
-page = st.sidebar.selectbox("Pilih Halaman", ["Dashboard Sensor", "Data Absensi"])
+page = st.sidebar.selectbox("Pilih Halaman", ["Dashboard Sensor", "Data Absensi", "Log Absensi"])
 
 # === DASHBOARD SENSOR ===
 if page == "Dashboard Sensor":
@@ -160,29 +159,11 @@ if page == "Dashboard Sensor":
             st.subheader("Grafik Kebisingan")
             st.line_chart(df["Kebisingan (dB)"])
 
-        st.markdown(""" 
-        - **Suhu (°C)**: Mengukur suhu ruangan secara real-time.
-        - **Kelembapan (%)**: Mengukur tingkat kelembapan udara di sekitar.
-        - **Kebisingan (dB)**: Mengukur tingkat kebisingan di dalam kelas.
-        """)
-
     time.sleep(2)
     st.rerun()
 
 # === DATA ABSENSI ===
 if page == "Data Absensi":
-    if st.button("🔴 Reset Data Absensi"):
-        if os.path.exists(LOG_FILE):
-            open(LOG_FILE, "w").close()
-        if os.path.exists(PHOTO_DIR):
-            for file in os.listdir(PHOTO_DIR):
-                file_path = os.path.join(PHOTO_DIR, file)
-                if os.path.isfile(file_path):
-                    os.remove(file_path)
-        st.success("✅ Semua data absensi telah dihapus.")
-        time.sleep(3)
-        st.rerun()
-
     st.markdown("DATA ABSENSI")
     absensi_data = load_absensi_data()
 
@@ -203,5 +184,20 @@ if page == "Data Absensi":
     else:
         st.info("Belum ada data absensi.")
 
-    time.sleep(2)  # Refresh data setiap 2 detik
+    time.sleep(2)
     st.rerun()
+
+# === LOG ABSENSI ===
+if page == "Log Absensi":
+    st.markdown("### Log Absensi")
+    
+    if os.path.exists(LOG_FILE):
+        with open(LOG_FILE, "r") as f:
+            logs = f.readlines()
+        
+        if logs:
+            st.table([{"Waktu": log.split(", ")[0], "Nama": log.split(", ")[1].strip()} for log in logs])
+        else:
+            st.info("Belum ada log absensi.")
+    else:
+        st.error(f"File log absensi '{LOG_FILE}' tidak ditemukan.")
