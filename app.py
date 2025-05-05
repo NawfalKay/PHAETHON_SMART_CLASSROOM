@@ -183,9 +183,6 @@ if page == "Data Absensi":
         time.sleep(3)
         st.rerun()
 
-    if st.button("🔄 Refresh Data Absensi"):
-        st.rerun()
-
     st.markdown("DATA ABSENSI")
     absensi_data = load_absensi_data()
 
@@ -205,3 +202,6 @@ if page == "Data Absensi":
                     st.markdown("---")
     else:
         st.info("Belum ada data absensi.")
+
+    time.sleep(2)  # Refresh data setiap 2 detik
+    st.rerun()
